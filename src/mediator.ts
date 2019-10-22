@@ -477,14 +477,11 @@ function onMouseUp() {
     handleMissedDragFrame();
     dropAnimationStarted = true;
     handleDropAnimation(() => {
-      isDragging = false; // 
+      isDragging = false; //
       fireOnDragStartEnd(false);
-      const containers = dragListeningContainers || [];
 
-      let containerToCallDrop = containers.shift();
-      while (containerToCallDrop !== undefined) {
-        containerToCallDrop.handleDrop(draggableInfo);
-        containerToCallDrop = containers.shift();
+      for (let i = 0; i < containers.length; i++) {
+        containers[i].handleDrop(draggableInfo)
       }
 
       dragListeningContainers = null!;
@@ -590,7 +587,7 @@ function initiateDrag(position: MousePosition, cursor: string) {
 
     dragListeningContainers = containers.filter(p => p.isDragRelevant(container, draggableInfo.payload));
     draggableInfo.relevantContainers = dragListeningContainers;
-    handleDrag = dragHandler(dragListeningContainers);
+    handleDrag = dragHandler(containers);
     if (handleScroll) {
       handleScroll({ reset: true, draggableInfo: undefined! });
     }

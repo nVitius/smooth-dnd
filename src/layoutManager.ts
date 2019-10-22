@@ -164,6 +164,11 @@ export default function layoutManager(containerElement: ElementX, orientation: O
 	}
 
 	function setVisibility(element: ElementX, isVisible: boolean) {
+		if (element === undefined) {
+		    console.log('undefined vis')
+			return
+		}
+
 		if (element[visibilityValue] === undefined || element[visibilityValue] !== isVisible) {
 			if (isVisible) {
 				element.style.removeProperty('visibility');
