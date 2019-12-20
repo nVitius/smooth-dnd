@@ -134,7 +134,7 @@ function getGhostElement(wrapperElement: HTMLElement, { x, y }: Position, contai
 
 function getDraggableInfo(draggableElement: HTMLElement): DraggableInfo {
   const container = containers.filter(p => draggableElement.parentElement === p.element)[0];
-  const draggableIndex = container.draggables.indexOf(draggableElement);
+  const draggableIndex = container.draggables().indexOf(draggableElement);
   const getGhostParent = container.getOptions().getGhostParent;
   const draggableRect = draggableElement.getBoundingClientRect();
   return {
@@ -160,7 +160,13 @@ function handleDropAnimation(callback: Function) {
   function endDrop() {
     Utils.removeClass(ghostInfo.ghost, 'animated');
     ghostInfo!.ghost.style.transitionDuration = null!;
-    getGhostParent().removeChild(ghostInfo.ghost);
+    try {
+      getGhostParent().removeChild(ghostInfo.ghost);
+    } catch (e) {
+      if (ghostInfo.ghost && ghostInfo.ghost.parentElement) {
+        ghostInfo.ghost.parentElement.removeChild(ghostInfo.ghost)
+      }
+    }
     callback();
   }
 
@@ -240,7 +246,7 @@ function handleDropAnimation(callback: Function) {
           });
           const prevDraggableEnd =
             removedIndex! > 0
-              ? layout.getBeginEnd(container.draggables[removedIndex! - 1]).end
+              ? layout.getBeginEnd(container.draggables()[removedIndex! - 1]).end
               : layout.getBeginEndOfContainer().begin;
           animateGhostToPosition(
             layout.getTopLeftOfElementBegin(prevDraggableEnd),
@@ -361,6 +367,7 @@ function onMouseDown(event: MouseEvent & TouchEvent) {
         }
 
         window.document.addEventListener('mouseup', onMouseUp);
+        window.document.addEventListener('touchend', onMouseUp)
       }
 
       if (startDrag) {
@@ -526,6 +533,7 @@ function dragHandler(dragListeningContainers: IContainer[]): (draggableInfo: Dra
       animationFrame = requestAnimationFrame(() => {
         if (isDragging && !dropAnimationStarted) {
           handleDragImmediate(draggableInfo, targetContainers);
+          // TODO don't handle scroll if container not in view
           handleScroll({ draggableInfo });
         }
         animationFrame = null;

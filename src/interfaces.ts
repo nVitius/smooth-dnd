@@ -71,8 +71,9 @@ export interface ContainerProps {
 }
 
 export interface IContainer {
+  containerId: number;
   element: HTMLElement;
-  draggables: HTMLElement[];
+  draggables: () => HTMLElement[];
   layout: LayoutManager;
   isDragRelevant: (sourceContainer: IContainer, payload: any) => boolean;
   dispose: (container: IContainer) => void;

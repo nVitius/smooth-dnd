@@ -1,6 +1,6 @@
 import { DraggableInfo, IContainer, Axis, Rect, ScrollAxis, Position } from "./interfaces";
 import { getScrollingAxis, hasClass, getVisibleRect } from "./utils";
-import { preventAutoScrollClass } from "./constants";
+import { forceAutoScrollXClass, forceAutoScrollYClass, preventAutoScrollClass } from "./constants";
 
 type Direction = 'begin' | 'end';
 
@@ -8,7 +8,7 @@ const maxSpeed = 1500; // px/s
 
 interface Animator {
 	stop: () => void;
-	animate: (direnction: Direction, speed: number) => void;
+	animate: (direction: Direction, speed: number) => void;
 }
 
 interface ScrollParams {
@@ -136,10 +136,15 @@ function rectangleGetter(element: HTMLElement) {
 	}
 }
 
-function getScrollerAnimator(container: IContainer): ScrollerAnimator[] {
+function getScrollerAnimator(container: IContainer | HTMLElement): ScrollerAnimator[] {
 	const scrollerAnimators: ScrollerAnimator[] = [];
 
-	let current: HTMLElement | null = container.element;
+	let current: HTMLElement | null = null
+	if (container instanceof  HTMLElement) {
+		current = container
+	} else {
+		current = container.element
+	}
 
 	while (current) {
 		const scrollingAxis = getScrollingAxis(current);
@@ -215,7 +220,11 @@ function getTopmostScrollAnimator(animatorInfos: ScrollerAnimator[], position: P
 }
 
 export default (containers: IContainer[], maxScrollSpeed = maxSpeed) => {
-	const animatorInfos = containers.reduce((acc: ScrollerAnimator[], container: IContainer) => {
+	const scrollableContainers: Array<HTMLElement> = [
+		...Array.from(document.getElementsByClassName(forceAutoScrollXClass)) as Array<HTMLElement>,
+		...Array.from(document.getElementsByClassName(forceAutoScrollYClass)) as Array<HTMLElement>
+	]
+	const animatorInfos = [...containers, ...scrollableContainers].reduce((acc: ScrollerAnimator[], container: IContainer |  HTMLElement) => {
 		const filteredAnimators = getScrollerAnimator(container).filter(p => {
 			return !acc.find(q => q.scrollerElement === p.scrollerElement);
 		});
@@ -256,20 +265,20 @@ export default (containers: IContainer[], maxScrollSpeed = maxSpeed) => {
 				}
 			});
 
-			const overlappingAnimators = animatorInfos.filter(p => p.cachedRect);
-			if (overlappingAnimators.length && overlappingAnimators.length > 1) {
-				// stop animations except topmost
-				const topScrollerAnimator = getTopmostScrollAnimator(overlappingAnimators, draggableInfo.mousePosition);
-
-				if (topScrollerAnimator) {
-					overlappingAnimators.forEach(p => {
-						if (p !== topScrollerAnimator) {
-							p.axisAnimations.x && p.axisAnimations.x.animator.stop();
-							p.axisAnimations.y && p.axisAnimations.y.animator.stop();
-						}
-					})
-				}
-			}
+			// const overlappingAnimators = animatorInfos.filter(p => p.cachedRect);
+			// if (overlappingAnimators.length && overlappingAnimators.length > 1) {
+			// 	// stop animations except topmost
+			// 	const topScrollerAnimator = getTopmostScrollAnimator(overlappingAnimators, draggableInfo.mousePosition);
+			//
+			// 	if (topScrollerAnimator) {
+			// 		overlappingAnimators.forEach(p => {
+			// 			if (p !== topScrollerAnimator) {
+			// 				p.axisAnimations.x && p.axisAnimations.x.animator.stop();
+			// 				p.axisAnimations.y && p.axisAnimations.y.animator.stop();
+			// 			}
+			// 		})
+			// 	}
+			// }
 		}
 	}
 }

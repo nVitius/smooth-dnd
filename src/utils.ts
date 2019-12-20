@@ -1,5 +1,5 @@
-import { Rect, Axis, ElementX, ScrollAxis, IContainer } from './interfaces';
-import { containerInstance } from './constants';
+import {Axis, ElementX, IContainer, Rect, ScrollAxis} from './interfaces';
+import {containerInstance, forceAutoScrollXClass, forceAutoScrollYClass} from './constants';
 
 export const getIntersection = (rect1: Rect, rect2: Rect) => {
   return {
@@ -51,6 +51,15 @@ export const getContainerRect = (element: HTMLElement): Rect => {
 };
 
 export const getScrollingAxis = (element: HTMLElement): ScrollAxis | null => {
+  if (hasClass(element, forceAutoScrollXClass) && hasClass(element, forceAutoScrollYClass))
+    return ScrollAxis.xy
+
+  if (hasClass(element, forceAutoScrollXClass))
+    return ScrollAxis.x
+
+  if (hasClass(element, forceAutoScrollYClass))
+    return ScrollAxis.y
+
   const style = window.getComputedStyle(element);
   const overflow = style['overflow'];
   const general = overflow === 'auto' || overflow === 'scroll';

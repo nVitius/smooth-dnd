@@ -54,8 +54,18 @@ function orientationDependentProps(map: PropMap) {
 }
 
 
+const managers: { [key:number]:LayoutManager; }= {};
 
-export default function layoutManager(containerElement: ElementX, orientation: Orientation, _animationDuration: number): LayoutManager {
+export default function layoutManager(
+	containerElement: ElementX,
+	orientation: Orientation,
+	_animationDuration: number,
+	containerId: number
+): LayoutManager {
+	if (managers[containerId]) {
+		return managers[containerId]
+	}
+
 	containerElement[extraSizeForInsertion] = 0;
 	const map = orientation === 'horizontal' ? horizontalMap : verticalMap;
 	const propMapper = orientationDependentProps(map);
@@ -239,7 +249,7 @@ export default function layoutManager(containerElement: ElementX, orientation: O
 		propMapper.set(style, 'begin', value);
 	}
 
-	return {
+	let manager = {
 		getSize,
 		getContainerRectangles,
 		getBeginEndOfDOMRect,
@@ -262,4 +272,7 @@ export default function layoutManager(containerElement: ElementX, orientation: O
 		getPosition,
 		setBegin,
 	};
+
+	managers[containerId] = manager
+	return manager;
 }

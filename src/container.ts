@@ -1,4 +1,17 @@
-import { animationClass, containerClass, containerInstance, dropPlaceholderFlexContainerClass, dropPlaceholderInnerClass, dropPlaceholderWrapperClass, stretcherElementClass, stretcherElementInstance, translationValue, wrapperClass, dropPlaceholderDefaultClass } from './constants';
+import {
+  animationClass,
+  containerClass,
+  containerInstance,
+  dropPlaceholderFlexContainerClass,
+  dropPlaceholderInnerClass,
+  dropPlaceholderWrapperClass,
+  stretcherElementClass,
+  stretcherElementInstance,
+  translationValue,
+  wrapperClass,
+  dropPlaceholderDefaultClass,
+  ghostClass
+} from './constants';
 import { defaultOptions } from './defaults';
 import { domDropHandler } from './dropHandlers';
 import { ContainerOptions, SmoothDnD, SmoothDnDCreator, DropPlaceholderOptions } from './exportTypes';
@@ -175,12 +188,13 @@ function handleDrop({ element, draggables, layout, getOptions }: ContainerProps)
   };
 }
 
-function getContainerProps(element: HTMLElement, getOptions: () => ContainerOptions): ContainerProps {
+function getContainerProps(element: HTMLElement, getOptions: () => ContainerOptions, containerId: number): ContainerProps {
   const draggables = wrapChildren(element);
   const options = getOptions();
   // set flex classes before layout is inited for scroll listener
-  addClass(element, `${containerClass} ${options.orientation}`);
-  const layout = layoutManager(element, options.orientation!, options.animationDuration!);
+  addClass(element, `${containerClass}`);
+  addClass(element, `${options.orientation}`)
+  const layout = layoutManager(element, options.orientation!, options.animationDuration!, containerId);
   return {
     element,
     draggables,
@@ -202,8 +216,11 @@ function getRemovedItem({ element, getOptions }: ContainerProps) {
 }
 
 function setRemovedItemVisibilty({ draggables, layout }: ContainerProps) {
-  return ({ dragResult }: DragInfo) => {
+  return ({ dragResult, draggableInfo }: DragInfo) => {
     if (dragResult.removedIndex !== null) {
+      if (draggables[dragResult.removedIndex].classList.contains(ghostClass))
+        return;
+
       layout.setVisibility(draggables[dragResult.removedIndex], false);
     }
   };
@@ -300,7 +317,7 @@ function getShadowBeginEndForDropZone({ layout }: ContainerProps) {
 function drawDropPlaceholder({ layout, element, getOptions }: ContainerProps) {
   let prevAddedIndex: number | null = null;
   return ({ dragResult: { elementSize, shadowBeginEnd, addedIndex, dropPlaceholderContainer } }: DragInfo) => {
-    const options = getOptions();    
+    const options = getOptions();
     if (options.dropPlaceholder) {
       const { animationDuration, className, showOnTop } = typeof options.dropPlaceholder === 'boolean' ? {} as any as DropPlaceholderOptions : options.dropPlaceholder as DropPlaceholderOptions;
       if (addedIndex !== null) {
@@ -660,21 +677,34 @@ function compose(params: any) {
   };
 }
 
+interface ContainerCounter {
+  next(): number
+}
+
+function containerCounter(init = 0): ContainerCounter {
+  return {
+    next: () => ++init
+  };
+}
+
+const counter = containerCounter()
+
 // Container definition begin
 function Container(element: HTMLElement): (options?: ContainerOptions) => IContainer {
   return function (options?: ContainerOptions): IContainer {
+    let containerId = counter.next()
     let containerOptions = Object.assign({}, defaultOptions, options);
     let dragResult: DragResult | null = null;
     let lastDraggableInfo: DraggableInfo | null = null;
-    const props = getContainerProps(element, getOptions);
-    let dragHandler = getDragHandler(props);
-    let dropHandler = handleDrop(props);
+    const props = () => getContainerProps(element, getOptions, containerId);
+    // let dragHandler = getDragHandler(props());
+    // let dropHandler = handleDrop(props());
     let scrollListener = listenScrollParent(element, onScroll);
 
     function processLastDraggableInfo() {
       if (lastDraggableInfo !== null) {
         lastDraggableInfo.invalidateShadow = true;
-        dragResult = dragHandler(lastDraggableInfo!);
+        dragResult = getDragHandler(props())(lastDraggableInfo!);
         lastDraggableInfo.invalidateShadow = false;
       }
     }
@@ -692,7 +722,7 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
 
     function prepareDrag(container: IContainer, relevantContainers: IContainer[]) {
       const element = container.element;
-      const draggables = props.draggables;
+      const draggables = props().draggables;
       setDraggables(draggables, element);
       container.layout.invalidateRects();
       draggables.forEach(p => setAnimation(p, true, getOptions().animationDuration));
@@ -700,7 +730,7 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
     }
 
     function onScroll() {
-      props.layout.invalidateRects();
+      props().layout.invalidateRects();
       processLastDraggableInfo();
     };
 
@@ -722,15 +752,16 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
     }
 
     const container: IContainer = {
+      containerId,
       element,
-      draggables: props.draggables,
-      isDragRelevant: isDragRelevant(props),
-      layout: props.layout,
+      draggables: () => props().draggables,
+      isDragRelevant: isDragRelevant(props()),
+      layout: props().layout,
       dispose,
       prepareDrag,
       handleDrag(draggableInfo: DraggableInfo) {
         lastDraggableInfo = draggableInfo;
-        dragResult = dragHandler(draggableInfo);
+        dragResult = getDragHandler(props())(draggableInfo);
         return dragResult;
       },
       handleDrop(draggableInfo: DraggableInfo) {
@@ -738,27 +769,26 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
         if (dragResult && dragResult.dropPlaceholderContainer) {
           element.removeChild(dragResult.dropPlaceholderContainer);
         }
-        lastDraggableInfo = null;       
-        dragHandler = getDragHandler(props);
-        dropHandler(draggableInfo, dragResult!);
+        lastDraggableInfo = null;
+        handleDrop(props())(draggableInfo, dragResult!);
         dragResult = null;
       },
       fireRemoveElement() {
         // will be called when container is disposed while dragging so ignore addedIndex
-        dropHandler(lastDraggableInfo!, Object.assign({}, dragResult!, { addedIndex: null }), true);
+        handleDrop(props())(lastDraggableInfo!, Object.assign({}, dragResult!, { addedIndex: null }), true);
         dragResult = null;
       },
       getDragResult() {
         return dragResult;
       },
       getTranslateCalculator(dragresult: { dragResult: DragResult }) {
-        return calculateTranslations(props)(dragresult);
+        return calculateTranslations(props())(dragresult);
       },
       onTranslated: () => {
         processLastDraggableInfo();
       },
       setDraggables: () => {
-        setDraggables(props.draggables, element);
+        setDraggables(props().draggables, element);
       },
       getScrollMaxSpeed() {
         return smoothDnD.maxScrollSpeed;
@@ -787,11 +817,12 @@ const smoothDnD: SmoothDnDCreator = function (element: HTMLElement, options?: Co
     },
     setOptions(options: ContainerOptions, merge?: boolean) {
       container.setOptions(options, merge);
-    }
+    },
+    container: container
   };
 };
 
-// wrap all draggables by default 
+// wrap all draggables by default
 // in react,vue,angular this value will be set to false
 smoothDnD.wrapChild = true;
 smoothDnD.cancelDrag = function () {

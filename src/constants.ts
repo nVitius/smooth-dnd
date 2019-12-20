@@ -19,6 +19,8 @@ export const isDraggableDetached = 'smoth-dnd-is-draggable-detached';
 export const disbaleTouchActions = 'smooth-dnd-disable-touch-action';
 export const noUserSelectClass = 'smooth-dnd-no-user-select';
 
+export const forceAutoScrollXClass = 'smooth-dnd-force-auto-scroll-x-class'
+export const forceAutoScrollYClass = 'smooth-dnd-force-auto-scroll-y-class'
 export const preventAutoScrollClass = 'smooth-dnd-prevent-auto-scroll-class';
 
 export const dropPlaceholderDefaultClass = 'smooth-dnd-drop-preview-default-class';
