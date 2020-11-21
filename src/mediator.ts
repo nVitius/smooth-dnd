@@ -337,6 +337,7 @@ const handleDragStartConditions = (function handleDragStartConditions() {
 })();
 
 function onMouseDown(event: MouseEvent & TouchEvent) {
+  console.log('onMouseDown', event)
   const e = getPointerEvent(event);
   if (!isDragging && (e.button === undefined || e.button === 0)) {
     grabbedElement = Utils.getParent(e.target as Element, '.' + constants.wrapperClass) as ElementX;
@@ -355,20 +356,20 @@ function onMouseDown(event: MouseEvent & TouchEvent) {
         startDrag = false;
       }
 
-      if (startDrag) {
-        container.layout.invalidate();
-        Utils.addClass(window.document.body, constants.disbaleTouchActions);
-        Utils.addClass(window.document.body, constants.noUserSelectClass);
-
-        const onMouseUp = () => {
-          Utils.removeClass(window.document.body, constants.disbaleTouchActions);
-          Utils.removeClass(window.document.body, constants.noUserSelectClass);
-          window.document.removeEventListener('mouseup', onMouseUp);
-        }
-
-        window.document.addEventListener('mouseup', onMouseUp);
-        window.document.addEventListener('touchend', onMouseUp)
-      }
+      // if (startDrag) {
+      //   Utils.addClass(window.document.body, constants.disbaleTouchActions);
+      //   Utils.addClass(window.document.body, constants.noUserSelectClass);
+      //
+      //   const onMouseUp = () => {
+      //     Utils.removeClass(window.document.body, constants.disbaleTouchActions);
+      //     Utils.removeClass(window.document.body, constants.noUserSelectClass);
+      //     window.document.removeEventListener('mouseup', onMouseUp);
+      //     window.document.removeEventListener('touchend', onMouseUp)
+      //   }
+      //
+      //   window.document.addEventListener('mouseup', onMouseUp);
+      //   window.document.addEventListener('touchend', onMouseUp)
+      // }
 
       if (startDrag) {
         handleDragStartConditions(e, container.getOptions().dragBeginDelay!, () => {
@@ -507,6 +508,7 @@ function getPointerEvent(e: TouchEvent & MouseEvent): MouseEvent & TouchEvent {
 }
 
 function handleDragImmediate(draggableInfo: DraggableInfo, dragListeningContainers: IContainer[]) {
+  console.log('handleDragImmediate')
   let containerBoxChanged = false;
   dragListeningContainers.forEach((p: IContainer) => {
     const dragResult = p.handleDrag(draggableInfo)!;
@@ -527,6 +529,7 @@ function handleDragImmediate(draggableInfo: DraggableInfo, dragListeningContaine
 
 function dragHandler(dragListeningContainers: IContainer[]): (draggableInfo: DraggableInfo) => boolean {
   let targetContainers = dragListeningContainers;
+  console.log('targetContainers', targetContainers)
   let animationFrame: number | null = null;
   return function (draggableInfo: DraggableInfo): boolean {
     if (animationFrame === null && isDragging && !dropAnimationStarted) {
@@ -571,6 +574,7 @@ function fireOnDragStartEnd(isStart: boolean) {
 }
 
 function initiateDrag(position: MousePosition, cursor: string) {
+  console.log('initiateDrag', position)
   if (grabbedElement !== null) {
     isDragging = true;
     const container = (containers.filter(p => grabbedElement!.parentElement === p.element)[0]) as IContainer;
@@ -578,6 +582,7 @@ function initiateDrag(position: MousePosition, cursor: string) {
     sourceContainerLockAxis = container.getOptions().lockAxis ? container.getOptions().lockAxis!.toLowerCase() as Axis : null;
 
     draggableInfo = getDraggableInfo(grabbedElement);
+    console.log('draggableInfo', draggableInfo)
     ghostInfo = getGhostElement(
       grabbedElement,
       { x: position.clientX, y: position.clientY },
@@ -585,13 +590,17 @@ function initiateDrag(position: MousePosition, cursor: string) {
       cursor
     );
     draggableInfo.position = {
-      x: position.clientX + ghostInfo.centerDelta.x,
-      y: position.clientY + ghostInfo.centerDelta.y,
+      x: position.clientX,
+      y: position.clientY,
     };
     draggableInfo.mousePosition = {
       x: position.clientX,
       y: position.clientY,
     };
+
+    console.log('position', JSON.stringify(draggableInfo.position))
+    console.log('mousePosition', JSON.stringify(draggableInfo.mousePosition))
+
 
     dragListeningContainers = containers.filter(p => p.isDragRelevant(container, draggableInfo.payload));
     draggableInfo.relevantContainers = dragListeningContainers;
@@ -698,6 +707,7 @@ function watchRectangles() {
   let isStarted = false;
   function _start() {
     animationHandle = requestAnimationFrame(() => {
+      console.log('watchFrame')
       dragListeningContainers.forEach(p => p.layout.invalidateRects());
       setTimeout(() => {
         if (animationHandle !== null) _start();

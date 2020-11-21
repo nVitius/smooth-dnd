@@ -75,12 +75,19 @@ function addScrollValue(element: HTMLElement | Window, axis: Axis, value: number
 	if (element) {
 		if (element !== window) {
 			if (axis === 'x') {
+				console.log(
+					'scrolling element',
+					(element as HTMLElement).id,
+					(element as HTMLElement).scrollLeft,
+					value
+				);
 				(element as HTMLElement).scrollLeft += value;
 			} else {
 				(element as HTMLElement).scrollTop += value;
 			}
 		} else {
 			if (axis === 'x') {
+				console.log('scrolling window');
 				element.scrollBy(value, 0);
 			} else {
 				element.scrollBy(0, value);
@@ -109,7 +116,8 @@ const createAnimator = (element: HTMLElement, axis: Axis = 'y'): Animator => {
 				startTime = timestamp;
 				let distanceDiff = (timeDiff / 1000) * speed!;
 				distanceDiff = direction === 'begin' ? (0 - distanceDiff) : distanceDiff;
-				addScrollValue(element, axis, distanceDiff);
+				console.log('distanceDiff', Math.floor(distanceDiff))
+				addScrollValue(element, axis, Math.floor(distanceDiff));
 				request = null;
 				start();
 			});
