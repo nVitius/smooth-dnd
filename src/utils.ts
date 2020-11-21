@@ -1,5 +1,5 @@
 import {Axis, ElementX, IContainer, Rect, ScrollAxis} from './interfaces';
-import {containerInstance, forceAutoScrollXClass, forceAutoScrollYClass} from './constants';
+import {containerInstance, forceScrollListenClass, forceAutoScrollXClass, forceAutoScrollYClass} from './constants';
 
 export const getIntersection = (rect1: Rect, rect2: Rect) => {
   return {
@@ -148,7 +148,10 @@ export const listenScrollParent = (element: HTMLElement, clb: () => void) => {
   function setScrollers() {
     let currentElement = element;
     while (currentElement) {
-      if (isScrolling(currentElement, 'x') || isScrolling(currentElement, 'y')) {
+      if (isScrolling(currentElement, 'x') ||
+          isScrolling(currentElement, 'y') ||
+          currentElement.classList.contains(forceAutoScrollXClass)
+      ) {
         scrollers.push(currentElement);
       }
       currentElement = currentElement.parentElement!;
@@ -162,7 +165,16 @@ export const listenScrollParent = (element: HTMLElement, clb: () => void) => {
 
   function start() {
     if (scrollers) {
-      scrollers.forEach(p => p.addEventListener('scroll', clb));
+      scrollers.forEach(p => {
+        if (p.classList.contains(forceAutoScrollXClass)) {
+          p.addEventListener('scroll', () => {
+            console.log('forceAutoScrollListener')
+            clb()
+          })
+        }
+
+        p.addEventListener('scroll', clb)
+      });
       window.addEventListener('scroll', clb);
     }
   }

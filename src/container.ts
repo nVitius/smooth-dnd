@@ -700,6 +700,7 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
     // let dragHandler = getDragHandler(props());
     // let dropHandler = handleDrop(props());
     let scrollListener = listenScrollParent(element, onScroll);
+    scrollListener.start()
 
     function processLastDraggableInfo() {
       if (lastDraggableInfo !== null) {
@@ -765,7 +766,7 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
         return dragResult;
       },
       handleDrop(draggableInfo: DraggableInfo) {
-        scrollListener.stop();
+        // scrollListener.stop();
         if (dragResult && dragResult.dropPlaceholderContainer) {
           element.removeChild(dragResult.dropPlaceholderContainer);
         }
